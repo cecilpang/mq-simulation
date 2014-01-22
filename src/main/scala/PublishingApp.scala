@@ -1,5 +1,5 @@
 import simulator.Simulator
 
 object PublishingApp extends App {
-  Simulator.startPublishing
+  Simulator.startPublishing(args(0))
 }
