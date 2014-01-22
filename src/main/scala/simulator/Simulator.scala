@@ -1,6 +1,5 @@
 package simulator
 
-
 import com.rabbitmq.client._
 import akka.actor.Props
 import actor.{PublishingActor, AppActorSystem}
@@ -49,10 +48,11 @@ object Simulator {
 
   import AppActorSystem.actorSystem.dispatcher
 
-  def startSimulation = {
+  val RABBITMQ_EXCHANGE = "lp.sim.exchange"
 
-    val NUM_OF_LISTENERS = 20
-    val RABBITMQ_EXCHANGE = "lp.sim.exchange"
+  def startConsumers = {
+
+    val NUM_OF_LISTENERS = 21
 
     // create the connection
     val connection = RabbitMQConnection.getConnection()
@@ -60,8 +60,6 @@ object Simulator {
     // create a new sending channel on which we declare the exchange
     val sendingChannel = connection.createChannel()
     sendingChannel.exchangeDeclare(RABBITMQ_EXCHANGE, "fanout")
-
-    val publishingActor = AppActorSystem.actorSystem.actorOf(Props(new PublishingActor(channel = sendingChannel, exchange = RABBITMQ_EXCHANGE)))
 
     // setup NUM_OF_LISTENERS listeners
     (1 to NUM_OF_LISTENERS) foreach (x => {
@@ -89,12 +87,22 @@ object Simulator {
       channel.basicConsume(queueName, true, queueName, msgConsumer)
     })
 
-    // schedule to invoke an actor every 50 ms, i.e. 20 msg/sec
-    AppActorSystem.actorSystem.scheduler.schedule(50 millis, 50 millis, publishingActor, "")
-
-    //publishingActor ! "start publishing"
+    println(NUM_OF_LISTENERS + " consumers started.")
 
   }
+
+  def startPublishing = {
+    // create the connection
+    val connection = RabbitMQConnection.getConnection()
+
+    // create a new sending channel on which we declare the exchange
+    val sendingChannel = connection.createChannel()
+    val publishingActor = AppActorSystem.actorSystem.actorOf(Props(new PublishingActor(channel = sendingChannel, exchange = RABBITMQ_EXCHANGE)))
+    // schedule to invoke an actor every 50 ms, i.e. 20 msg/sec
+    AppActorSystem.actorSystem.scheduler.schedule(50 millis, 50 millis, publishingActor, "")
+  }
+
+
 
 
 
