@@ -1,0 +1,99 @@
+package com.wmg.testapp.servicetest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.net.URL;
+import java.util.List;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+
+import com.wmg.testapp.service.resources.managers.SimpleBeanManager;
+import com.wmg.testapp.service.resources.data.SimpleBean;
+
+import com.wmg.dsp.utils.cassandra.test.EmbeddedCassandraTestWrapper;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+/**
+ * User: abodyul
+ * Date: 30.01.13
+ * Time: 16:12
+ */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath:test-beans.xml")
+public class CassandraSimpleItTest {
+    private static final PageRequest PAGEABLE = new PageRequest(0, Integer.MAX_VALUE);
+    private static final String KEYSPACE = "dsp_data_junit";
+    private static final String PACKAGE = "com.wmg.testapp.service.resources.data";
+    private static final URL PUT_JSON = CassandraSimpleItTest.class.getResource("/json/put_simplebeans.json");
+    //private static final URL IMPORT_JSON = ArtistManagerTest.class.getResource("/json/import_artists.json");
+    //private static final URL DELETE_JSON = ArtistManagerTest.class.getResource("/json/delete_artists.json");
+
+    @Autowired
+    private SimpleBeanManager manager;
+
+    private List<SimpleBean> simpleBeans;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    @BeforeClass
+    public static void setUpCassandra() throws Exception {
+        EmbeddedCassandraTestWrapper.setupWrapper(KEYSPACE, PACKAGE);
+    }
+
+    @AfterClass
+    public static void tearDownCassandra() throws Exception {
+        // FIXME need to optimize cassandra-utils
+        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
+        EmbeddedCassandraTestWrapper.teardownWrapper();
+    }
+
+    @Before
+    public void createData() throws Exception {
+        simpleBeans = mapper.readValue(PUT_JSON, new TypeReference<List<SimpleBean>>() {
+        });
+
+//        log.info("reading simpleBean list from json");
+//        log.info(simpleBeans.toString());
+
+        manager.save(simpleBeans);
+    }
+
+    @Test
+    public void testFindById() {
+        final SimpleBean expected = simpleBeans.get(0);
+        final SimpleBean actual = manager.findById(expected.getId());
+        assertEquals(expected.getId(), actual.getId());
+    }
+
+    @Test
+    public void testFindAll() {
+        final Page<SimpleBean> page = manager.findAll(PAGEABLE);
+        assertNotNull(page);
+        final List<SimpleBean> artists = page.getContent();
+        assertEquals(this.simpleBeans.size(), simpleBeans.size());
+    }
+
+    @Test
+    public void testDelete() {
+        for (SimpleBean simpleBean: simpleBeans) {
+            manager.deleteById(simpleBean.getId());
+        }
+        final Page<SimpleBean> page = manager.findAll(PAGEABLE);
+        assertNotNull(page);
+        assertTrue(page.getContent().isEmpty());
+    }
+
+}

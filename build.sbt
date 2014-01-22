@@ -8,9 +8,9 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.2.3",
   "com.typesafe.akka" %% "akka-testkit" % "2.2.3",
   "com.rabbitmq" % "amqp-client" % "3.2.2",
-  "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-  "junit" % "junit" % "4.11" % "test",
-  "com.novocode" % "junit-interface" % "0.10" % "test"
+  "com.fasterxml.jackson.module" % "jackson-module-scala_2.10" % "2.3.1",
+  "org.scala-lang" % "scala-reflect" % "2.10.3",
+  "org.scalatest" %% "scalatest" % "1.9.1" % "test"
 )
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")

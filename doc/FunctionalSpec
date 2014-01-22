@@ -1,4 +1,4 @@
-To simulate this SLA:
+SLA requested by LP:
 
 overall message size 1-5K
 no limitations on comments/posts
@@ -6,7 +6,7 @@ no limitations on comments/posts
 supports 15-20 messages per second
 expected latency upon replication is <1sec
 
-This is to be performed:
+Simulator does this:
 
 RabbitMQ:
 One fanout Exchange
@@ -14,9 +14,9 @@ One fanout Exchange
 
 Akka:
 An Actor that publishes messages to the exchange
-An Actor that listens to messages from a queue
-An sender that schedule 20 messages to be sent to the publishing actor every second
+Use Akka scheduler to invoke the actor to publish 20 msg / second
+200 listeners listen to messages from 200 queues
 
-The message contains a timestamp on when it was sent.  On receipt, the receiver checks that the latency is < 1sec
+The message contains a timestamp on when it was sent.  On receipt, the receiver calculate the latency
 
 
