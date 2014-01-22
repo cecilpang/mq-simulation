@@ -52,7 +52,7 @@ object Simulator {
 
   def startConsumers = {
 
-    val NUM_OF_LISTENERS = 21
+    val NUM_OF_LISTENERS = 20
 
     // create the connection
     val connection = RabbitMQConnection.getConnection()
@@ -65,7 +65,7 @@ object Simulator {
     (1 to NUM_OF_LISTENERS) foreach (x => {
 
       val channel = connection.createChannel()
-      val queueName = channel.queueDeclare("lp.sim." + x, false, true, true, null).getQueue()
+      val queueName = channel.queueDeclare("lp.sim." + System.currentTimeMillis(), false, true, true, null).getQueue()
       channel.queueBind(queueName, RABBITMQ_EXCHANGE, "")
 
       val msgConsumer = new DefaultConsumer(channel) {
