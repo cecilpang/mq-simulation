@@ -16,11 +16,11 @@ object RabbitMQConnection {
   private val connection: Connection = null
 
   // Return a connection if one doesn't exist. Else create a new one
-  def getConnection(): Connection = {
+  def getConnection(host: String): Connection = {
     connection match {
       case null => {
         val factory = new ConnectionFactory()
-        factory.setHost("107.22.8.250")
+        factory.setHost(host)
         factory.newConnection()
       }
       case _ => connection
@@ -31,7 +31,7 @@ object RabbitMQConnection {
 
 // Dummy message loaded from a file
 object DummyMessage {
-  val byteArray: Array[Byte] = loadFromFile("./src/main/resources/DummyMessage")
+  val byteArray: Array[Byte] = loadFromFile("DummyMessage")
 
   def loadFromFile(fileName: String): Array[Byte] = {
     val source: BufferedSource = scala.io.Source.fromFile(fileName)(scala.io.Codec.ISO8859)
@@ -49,10 +49,10 @@ object Simulator {
 
   import AppActorSystem.actorSystem.dispatcher
 
-  def startConsumers(exchange: String, numOfConsumers: Int) = {
+  def startConsumers(host: String, exchange: String, numOfConsumers: Int) = {
 
     // create the connection
-    val connection = RabbitMQConnection.getConnection()
+    val connection = RabbitMQConnection.getConnection(host)
 
     // create a new sending channel on which we declare the exchange
     val sendingChannel = connection.createChannel()
@@ -62,7 +62,7 @@ object Simulator {
     (1 to numOfConsumers) foreach (x => {
 
       val channel = connection.createChannel()
-      val queueName = channel.queueDeclare("lp.sim." + System.currentTimeMillis(), false, true, true, null).getQueue()
+      val queueName = channel.queueDeclare("sim." + System.currentTimeMillis(), false, true, true, null).getQueue()
       channel.queueBind(queueName, exchange, "")
 
       val msgConsumer = new DefaultConsumer(channel) {
@@ -88,14 +88,15 @@ object Simulator {
 
   }
 
-  def startPublishing(exchange: String) = {
+  def startPublishing(host: String, exchange: String, interval: Int) = {
     // create the connection
-    val connection = RabbitMQConnection.getConnection()
+    val connection = RabbitMQConnection.getConnection(host)
 
     // create a new sending channel on which we declare the exchange
     val sendingChannel = connection.createChannel()
     val publishingActor = AppActorSystem.actorSystem.actorOf(Props(new PublishingActor(channel = sendingChannel, exchange = exchange)))
-    // schedule to invoke an actor every 50 ms, i.e. 20 msg/sec
-    AppActorSystem.actorSystem.scheduler.schedule(50 millis, 50 millis, publishingActor, "")
+
+    // schedule to invoke an actor every interval milli seconds
+    AppActorSystem.actorSystem.scheduler.schedule(50 millis, interval millis, publishingActor, "")
   }
 }
